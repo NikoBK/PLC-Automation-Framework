@@ -7,15 +7,20 @@ from rclpy.node import Node
 import xml.etree.ElementTree as ET
 import time
 
+
 class MinimalClientAsync(Node):
 
     def __init__(self):
+        #Initialise ROS and create the node
         super().__init__('minimal_client_async')
+
+        #Initialise the client object, which call the service with process times
         self.cli = self.create_client(GetProcessTime, 'get_process_time')
 
         while not self.cli.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('service not available, waiting again...')
 
+        #Create service variable type
         self.req = GetProcessTime.Request()
 
         #Init TCP/IP connection
@@ -45,9 +50,10 @@ class MinimalClientAsync(Node):
         print('Now listening...')
 
         # With the help of listening () function
-        # starts listening
+        # starts listening to incoming connections
         soc.listen(1)
 
+        #Accept the incoming request
         self.conn, address = soc.accept()
 
         # print the address of connection
@@ -56,13 +62,20 @@ class MinimalClientAsync(Node):
 
     def send_request(self, a):
         self.req.id = a
+
+        #Sends request to service
         self.future = self.cli.call_async(self.req)
+
+        #Update the values
         rclpy.spin_until_future_complete(self, self.future)
+
         return self.future.result()
 
+    #Receive data from socket connection
     def getData(self):
         return self.conn.recv(2048).decode("utf-8")
 
+    #Send data through socket connection
     def sendData(self, response):
         time = f"{response}".encode("utf-8")
 
@@ -72,22 +85,22 @@ class MinimalClientAsync(Node):
 def main(args=None):
     rclpy.init(args=args)
 
+    #Create client object
     minimal_client = MinimalClientAsync()
 
+    #Create XML parser object
     parser = ET.XMLParser(encoding="utf-8")
 
     while rclpy.ok():
 
         print("\nWaiting to receive Data")
-        #Read the up to 32 bits of data, whivh maches the bytestream size from plc
-        #uid = minimal_client.getData()
-	
-        #print("Carrier available")
 
+        #Loop until valid data is received
         while True:
             data = minimal_client.getData()
 
             if data != '':
+                #Read the size of the incoming message
                 size = int(data[:3])
                 print(data)
                 break
@@ -95,38 +108,29 @@ def main(args=None):
         
         print(f"\nData received: {data[0:size+3]}")
         
-        
-
+        #Expected data format to receive from PLC
         #data = '<?xml version = "1.0"?><station_id><rfid_tag ID="14" /><time DT="DT#1970-01-01-00:00:00" /></station_id>'
 
+        #Create XML string parser object
         root = ET.fromstring(data[3:size+3], parser = parser)
 
-
+        #Search XML string for the RFID tag
         id_num = root.find("rfid_tag").get('ID')
 
         print()
         print(id_num)
 
-        #TODO: Extract id from retrieved data
-        #uid = 8
-        #uid = extractID(data)
+        #Request service to to give process time for given tag number
+        response = minimal_client.send_request(int(id_num))    
 
-        #TODO: Save data to a log file
-
-        response = minimal_client.send_request(int(id_num))     
-        #print("before spin")
-        #rclpy.spin_once(minimal_client) 
-        #print("after spin")
-
-
+        #Send the process time to the PLC
         minimal_client.sendData(f"T#{response.time}ms") #response)
 
-        #time.sleep(2)
         print(f"data sent: {response.time}")
 
         
 
-
+    #Close the program
     minimal_client.destroy_node()
     rclpy.shutdown()
 
