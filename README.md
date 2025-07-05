@@ -1,5 +1,8 @@
 # PLC Networking
-This repository is a mini project from Software & Automation Frameworks on Aalborg University's robottechnology bachelor, fourth semester.
+This repository is a mini project from the 'Software & Automation Frameworks' course at Aalborg University's robottechnology b.sc. fourth semester.
+
+## Authors
+This repository was written by group 463 on AAU robotics, on the fourth semester in spring, class of 2024.
 
 ## Scope & Requirements
 The requirements for this repository and the project in general is as to write:
@@ -17,6 +20,3 @@ screen during program execution. NOTE: The visualization shall be done by a ROS2
 - The PLC shall simulate the physical processing time by letting the pallet wait for the
 returned time.
 - The decoded data shall be stored in a file on the PC, so that it can be analyzed later.
-
-## Authors
-This repository was written by group 463 on AAU robotics, on the fourth semester in spring, class of 2024.
